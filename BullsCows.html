@@ -1,0 +1,205 @@
+<html>
+
+
+
+
+
+
+
+
+
+
+
+
+<body>
+<script>
+
+var variants;
+
+function gen(){
+	var i1,i2,i3,i4;
+	arr =[];
+	for(var i1=0;i1<=9;i1++){
+		for(i2=0;i2<=9;i2++){
+			if (i2!=i1) {
+				for(i3=0;i3<=9;i3++){
+					if (i3!=i1 && i3!=i2) {
+						for(i4=0;i4<=9;i4++){
+							if (i4!=i1 && i4!=i2 && i4!=i3){
+								var x = "" + i1 + i2 + i3 + i4;
+								//console.log(x,i1,i2,i3,i4);
+								arr.push(x);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	return arr;
+}
+
+function getBullsCows(qDigit, aDigit){
+	var cows =0;
+	var bulls=0;
+
+	for(i=0;i<4;i++){
+		var qD = qDigit[i];
+		var indx = aDigit.indexOf(qD);
+		if (indx != -1){
+			if (indx != i) cows++;
+			if (indx == i) bulls++;
+		}		
+	}
+	return [bulls, cows];
+}
+
+function getStat(pDebug){
+	ans = []
+	for(var i=0;i<10;i++) { 
+		ans[i] = []; 
+		for(var j=0;j<4;j++){
+			ans[i][j]=0;
+		}
+	}
+	for(var i=0; i<variants.length;i++){
+		for(var j=0;j<4;j++){
+			var digit = variants[i][j];
+			ans[digit][j]+=1;
+		}
+	}
+	if (pDebug) { console.log(ans); }
+	return ans;
+}
+
+
+
+function init(pDebug){
+	if (pDebug) { console.log("init"); }
+	variants = gen();
+	num =  getNextNumber(variants);
+	return num;
+}
+
+
+function exclude(arr, qDigit, qBulls, qCows){
+	ans = []
+	arr.forEach(function(val){
+		var bc = getBullsCows(qDigit, val);
+		if (bc[0] == qBulls && bc[1] == qCows){
+			ans.push(val);
+		}
+	})
+	return ans;
+}
+
+
+function getNumberScore(stat, val){
+	var ans = 1;
+	for(var pos=0;pos<4;pos++){
+		var digit = val[pos];
+		ans += stat[digit][pos] * 10;
+		for(var j=0;j<4;j++){
+			ans += stat[digit][j] ;
+		}
+	}
+	return ans;
+}
+
+function getNextNumber1(arr){
+	indx = Math.round( Math.random() * (arr.length-1));
+	return arr[indx];
+}
+
+
+function getNextNumber2(arr){
+	stat = getStat();
+	var numAns= "";
+	var bestScore = 0;
+	arr.forEach(function(val){
+		var score = getNumberScore(stat, val);
+		if (score > bestScore){
+			bestScore = score;
+			numAns = val;
+		}
+	})
+	return numAns;
+}
+
+function getNextNumber(arr){
+	return getNextNumber1(arr);
+	//return getNextNumber2(arr);
+}
+
+
+function cycle(qDigit, qBulls, qCows){
+	variants = exclude(variants, qDigit, qBulls, qCows);
+	return getNextNumber(variants);
+}
+
+function guessCycle(num, myDigit, pDebug){
+	var bc = getBullsCows(num, myDigit)
+	if (pDebug) { 
+		console.log("Ход: ", num, bc[0], bc[1], "было вариантов: ",  variants.length); 
+	}
+	num = cycle(num, bc[0], bc[1])
+	if (pDebug){
+		getStat(pDebug);
+	}
+	return num;
+}
+
+
+function guess(myDigit, pPrint, pDebug){
+	num = init(pDebug);
+	var tries =0;
+	
+	while(variants.length > 1){
+		num = guessCycle(num, myDigit, pDebug);
+		tries++;
+		
+		if (tries > 20) {
+			console.log("20 tryes? fuck this number");
+			return;
+		}
+	}
+	if (pPrint){
+		console.log("Ответ: " + variants[0])
+		console.log("потребовалось попыток: " , tries);
+	}
+	return tries;
+}
+
+function doTest(){
+	//var numbers = ["3291", "1234", "5678", "8203", "9876", "1845", "3051", "1830", "1029"]
+	var guessStat = [0,0,0,0,0,0,0,0,0,0,0,0];
+	var numbers = gen();
+	var iterations = 1;
+	var sumScore = 0
+	var bestScore = 10000;
+	var worstScore = 0;
+	for(var i=0;i<numbers.length;i++){
+		if (i%500 ==0) { console.log("calc number: ", i, " of", numbers.length);}
+		for(var j=0;j<iterations;j++){
+			var score = guess(numbers[i], false);
+			//if (score==7) console.log("7:", numbers[i]);
+			sumScore += score;
+			guessStat[score]+= 1/iterations;
+			if (score < bestScore) bestScore = score;
+			if (score > worstScore) worstScore = score;
+		}
+	}
+	sumScore = sumScore / (numbers.length * iterations);
+	//console.log(sumScore, bestScore, worstScore);
+	return [sumScore, bestScore, worstScore, guessStat];
+}
+
+init();
+
+</script>
+
+
+
+</body>
+
+</html>
